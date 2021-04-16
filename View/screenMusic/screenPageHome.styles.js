@@ -1,20 +1,12 @@
-import { StyleSheet, Dimensions } from 'react-native';
-
-const { height, width } = Dimensions.get('window');
+import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
     container: {
         position: 'relative',
+        alignItems: 'center',
     },
-    PictureViewer: {
-        width: 300,
-        height: 300,
-        marginTop: 50,
-    },
-    ImageStyle: {
-        width: 300,
-        borderRadius: 180,
-        height: 300,
-        position: 'absolute',
+    Title: {
+        fontSize: 24,
+        margin: 10,
     }
 })

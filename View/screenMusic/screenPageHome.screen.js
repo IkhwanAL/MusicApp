@@ -1,21 +1,22 @@
 import React from 'react';
-import { SafeAreaView, View, Text, Image } from 'react-native';
+import { SafeAreaView, View, Text } from 'react-native';
 import HomeStyle from './screenPageHome.styles';
 import PictureView from '../../component/picture/PictureView.component';
+import SliderView from '../../component/slider/sliderVIew.component';
 
 export default class HomeView extends React.Component {
+
     render() {
         return (
             <SafeAreaView style={HomeStyle.container}>
                 <PictureView />
+                <SliderView />
                 <View>
-                    <Text>
-                        Time
+                    <Text style={HomeStyle.Title}>
+                        Colors
                     </Text>
                 </View>
-                <Text>
-                    Title
-                </Text>
+
                 <View>
                     <Text>
                         Control Play Music
