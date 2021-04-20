@@ -33,7 +33,7 @@ const TopBar = () => {
 
             </View>
             <ModalView
-                visible={visible.visible}
+                visible={visible}
                 onRequestClose={onHandleClose}
             />
         </React.Fragment>

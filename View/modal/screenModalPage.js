@@ -3,20 +3,65 @@ import {
     Modal,
     View,
     Text,
-    TouchableOpacity
+    TouchableOpacity,
+    SafeAreaView,
+    FlatList,
+    Alert,
 } from 'react-native';
+import Data from './dummy';
 import ModalStyle from './screenModalPage.styles';
-import Icon from 'react-native-vector-icons/AntDesign';
-import Icon1 from 'react-native-vector-icons/Feather';
+import { AntDesign, Feather } from '@expo/vector-icons'
+import { renderItem } from './FileUri';
+import * as FileSystem from 'expo-file-system';
+const { StorageAccessFramework } = FileSystem;
 
 export default class ModalView extends React.Component {
     constructor(props) {
         super(props);
     }
+
+    handlePress = async () => {
+        try {
+            const permission = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+            if (!permission.granted) {
+                Alert.alert(
+                    "Permission Forbidden",
+                    "Msg",
+                    [
+                        {
+                            text: "Ok",
+                            style: 'destructive',
+                            onPress: () => { console.log("Ok ") }
+                        }
+                    ]
+                )
+                return
+            }
+            if (!permission.directoryUri) {
+                Alert.alert(
+                    "You Does Not Choose Directory",
+                    "Msg",
+                    [
+                        {
+                            text: "Ok",
+                            style: 'destructive',
+                            onPress: () => { console.log("Ok ") }
+                        }
+                    ]
+                )
+                return
+            }
+            const create = await StorageAccessFramework.createFileAsync(permission.directoryUri, "test", '.mp3');
+            console.log(create);
+        } catch (error) {
+            console.log(error);
+        }
+
+
+    }
     render() {
-        const { visible, onRequestClose } = this.props;
+        const { visible: { visible }, onRequestClose } = this.props;
         return (
-            // <View>
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -32,25 +77,52 @@ export default class ModalView extends React.Component {
                                 </Text>
                             </View>
                             <TouchableOpacity onPress={onRequestClose}>
-                                <Icon name="close" size={24} color="#FF0000" />
+                                <AntDesign name="close" size={24} color="#FF0000" />
                             </TouchableOpacity>
                         </View>
                         <View style={ModalStyle.List}>
-                            <Icon name="addfolder" size={30} color="#000" />
-                            <Text style={ModalStyle.TextList}>
-                                Add Directory
-                            </Text>
+                            <AntDesign name="addfolder" size={30} color="#000" />
+                            <TouchableOpacity onPress={this.handlePress}>
+                                <Text style={ModalStyle.TextList}>
+                                    Add Directory
+                                </Text>
+                            </TouchableOpacity>
                         </View>
+                        <SafeAreaView style={ModalStyle.ListView}>
+                            <FlatList
+                                data={Data}
+                                ListHeaderComponent={
+                                    () => <Text style={{
+                                        marginHorizontal: 4,
+                                        fontSize: 16
+                                    }}>List Directory</Text>
+                                }
+                                renderItem={(item) => renderItem(item, { icon: "minus-circle", color: "#F00" })}
+                                keyExtractor={item => item.id.toString()}
+                            />
+                        </SafeAreaView>
                         <View style={ModalStyle.List}>
-                            <Icon1 name="list" size={30} color="#000" />
+                            <Feather name="list" size={30} color="#000" />
                             <Text style={ModalStyle.TextList}>
                                 Choose Playlists
                             </Text>
                         </View>
+                        <SafeAreaView style={ModalStyle.ListView}>
+                            <FlatList
+                                data={Data}
+                                ListHeaderComponent={
+                                    () => <Text style={{
+                                        marginHorizontal: 4,
+                                        fontSize: 16
+                                    }}>List Playlist</Text>
+                                }
+                                renderItem={(item) => renderItem(item, { icon: "check", color: "#23A730" })}
+                                keyExtractor={item => item.id.toString()}
+                            />
+                        </SafeAreaView>
                     </View>
                 </View>
             </Modal>
-            // </View>
         )
     }
 }

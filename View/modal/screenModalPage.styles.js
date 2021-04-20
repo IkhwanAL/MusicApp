@@ -24,8 +24,13 @@ export default StyleSheet.create({
         flexDirection: 'row',
         margin: 10,
     },
+    ListView: {
+        backgroundColor: 'rgba(165, 236, 215, 0.6)',
+        // opacity: 0.6,
+        borderRadius: 10,
+    },
     TextList: {
-        paddingLeft: 50,
+        // paddingLeft: 50,     
         fontSize: 16
     },
     TextHeader: {

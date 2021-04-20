@@ -19,7 +19,6 @@ export default StyleSheet.create({
         justifyContent: 'space-between',
     },
     HeaderTextStyle: {
-        fontFamily: "'Open Sans', sans-serif",
         fontSize: 24,
     },
     IconButtonStyle: {
