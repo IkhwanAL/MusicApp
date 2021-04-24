@@ -3,15 +3,22 @@ import React from 'react';
 import { StyleSheet, SafeAreaView } from 'react-native';
 import TopBar from './component/topBar/topBar.component';
 import HomeView from './View/screenMusic/screenPageHome.screen'
+import { CreateTableFolderLocation, DropTable } from './logic/transaction/addDirectory';
 
-export default function App() {
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar hidden />
-      <TopBar />
-      <HomeView />
-    </SafeAreaView>
-  );
+export default class App extends React.Component {
+  componentDidMount() {
+    // DropTable()
+    CreateTableFolderLocation();
+  }
+  render() {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar hidden />
+        <TopBar />
+        <HomeView />
+      </SafeAreaView>
+    );
+  }
 }
 
 const styles = StyleSheet.create({

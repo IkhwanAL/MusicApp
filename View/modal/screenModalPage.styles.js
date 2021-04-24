@@ -28,6 +28,7 @@ export default StyleSheet.create({
         backgroundColor: 'rgba(165, 236, 215, 0.6)',
         // opacity: 0.6,
         borderRadius: 10,
+        maxHeight: 150,
     },
     TextList: {
         // paddingLeft: 50,     

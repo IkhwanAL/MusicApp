@@ -8,16 +8,89 @@ import {
     FlatList,
     Alert,
 } from 'react-native';
-import Data from './dummy';
+import { db, insertFolder } from '../../logic/transaction/addDirectory';
 import ModalStyle from './screenModalPage.styles';
 import { AntDesign, Feather } from '@expo/vector-icons'
-import { renderItem } from './FileUri';
+import FileUriStyle from './fileUri.styles'
 import * as FileSystem from 'expo-file-system';
 const { StorageAccessFramework } = FileSystem;
 
 export default class ModalView extends React.Component {
     constructor(props) {
         super(props);
+        this.props = props;
+    }
+    state = {
+        Folder: [],
+    }
+
+    async selectFolder() {
+        const SQLQuery = "select * from folder";
+        db.transaction(tx => {
+            tx.executeSql(SQLQuery, [], (_, res) => {
+                const { _array, length } = res.rows;
+                if (length < 0) {
+                    console.log("Data Not Found");
+                }
+                this.setState({ Folder: _array })
+            })
+        });
+    }
+
+    Delete = (id) => {
+        const sql = 'delete from folder where id = ?';
+        db.transaction(tx => {
+            tx.executeSql(sql, [id], (_, res) => {
+                this.setState((prevState) => {
+                    const { Folder } = prevState;
+                    const data = Object.entries(Folder);
+                    const res = data.filter(([key, values]) => {
+                        return values.id === id
+                    });
+
+                    return {
+                        Folder: Object.fromEntries(res)
+                    }
+                })
+            });
+        }, (er) => console.log(er.message), () => {
+            console.log('delete')
+        });
+
+    }
+    componentDidMount() {
+        const call = async () => {
+            await this.selectFolder();
+        }
+        call();
+    }
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        const call = async () => {
+            await this.selectFolder();
+        }
+        if (prevState.Folder.length !== this.state.Folder.length) {
+            call()
+        }
+    }
+    componentWillUnmount() {
+        this.setState({ Folder: [] })
+    }
+
+    FileUrl = (itemId, FileUri) => {
+        return (
+            <View style={FileUriStyle.ViewStyle}>
+                <Text>{FileUri}</Text>
+                <TouchableOpacity onPress={() => { this.Delete(itemId) }}>
+                    <Feather name='minus-circle' size={18} color='#F00' />
+                </TouchableOpacity>
+            </View>
+        )
+    }
+
+    renderItem = (props) => {
+        return (
+            this.FileUrl(props.item.id, props.item.directory)
+        )
     }
 
     handlePress = async () => {
@@ -26,7 +99,7 @@ export default class ModalView extends React.Component {
             if (!permission.granted) {
                 Alert.alert(
                     "Permission Forbidden",
-                    "Msg",
+                    "Permission To Access Directory is not Granted",
                     [
                         {
                             text: "Ok",
@@ -39,8 +112,8 @@ export default class ModalView extends React.Component {
             }
             if (!permission.directoryUri) {
                 Alert.alert(
-                    "You Does Not Choose Directory",
-                    "Msg",
+                    "Failed To Select Directory",
+                    "You Did not Choose Any Directory",
                     [
                         {
                             text: "Ok",
@@ -51,16 +124,24 @@ export default class ModalView extends React.Component {
                 )
                 return
             }
-            const create = await StorageAccessFramework.createFileAsync(permission.directoryUri, "test", '.mp3');
-            console.log(create);
+            const uri = permission.directoryUri;
+            const root = uri.split('%3A');
+
+            if (!root.indexOf('%2F')) {
+                insertFolder(decodeURIComponent(root[root.length - 1]), uri);
+                return
+            }
+
+            const subFolder = root[1].split('%2F');
+            await insertFolder(decodeURIComponent(subFolder[subFolder.length - 1]), uri)
+            await this.selectFolder();
         } catch (error) {
-            console.log(error);
+            console.log(error.message);
         }
-
-
     }
     render() {
-        const { visible: { visible }, onRequestClose } = this.props;
+        const { Folder } = this.state;
+        const { visible, onRequestClose } = this.props;
         return (
             <Modal
                 animationType="slide"
@@ -82,7 +163,7 @@ export default class ModalView extends React.Component {
                         </View>
                         <View style={ModalStyle.List}>
                             <AntDesign name="addfolder" size={30} color="#000" />
-                            <TouchableOpacity onPress={this.handlePress}>
+                            <TouchableOpacity onPress={this.handlePress} style={{ marginHorizontal: 20 }}>
                                 <Text style={ModalStyle.TextList}>
                                     Add Directory
                                 </Text>
@@ -90,33 +171,36 @@ export default class ModalView extends React.Component {
                         </View>
                         <SafeAreaView style={ModalStyle.ListView}>
                             <FlatList
-                                data={Data}
+                                data={Folder}
                                 ListHeaderComponent={
                                     () => <Text style={{
                                         marginHorizontal: 4,
                                         fontSize: 16
                                     }}>List Directory</Text>
                                 }
-                                renderItem={(item) => renderItem(item, { icon: "minus-circle", color: "#F00" })}
+                                renderItem={this.renderItem}
                                 keyExtractor={item => item.id.toString()}
+                                extraData={Folder}
+                                refreshing={true}
                             />
                         </SafeAreaView>
                         <View style={ModalStyle.List}>
                             <Feather name="list" size={30} color="#000" />
-                            <Text style={ModalStyle.TextList}>
+                            <Text style={[ModalStyle.TextList, { marginHorizontal: 20 }]}>
                                 Choose Playlists
                             </Text>
                         </View>
                         <SafeAreaView style={ModalStyle.ListView}>
                             <FlatList
-                                data={Data}
+                                data={Folder}
                                 ListHeaderComponent={
                                     () => <Text style={{
                                         marginHorizontal: 4,
                                         fontSize: 16
                                     }}>List Playlist</Text>
                                 }
-                                renderItem={(item) => renderItem(item, { icon: "check", color: "#23A730" })}
+                                renderItem={this.renderItem}
+                                extraData={Folder}
                                 keyExtractor={item => item.id.toString()}
                             />
                         </SafeAreaView>
@@ -126,3 +210,4 @@ export default class ModalView extends React.Component {
         )
     }
 }
+// #23A730

@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 let db;
-async function Open() {
+function Open() {
     try {
         const _db = SQLite.openDatabase('musicapp');
         return _db
@@ -10,10 +10,10 @@ async function Open() {
     }
 }
 
-async function getDb() {
+function getDb() {
     try {
         if (db === null) {
-            db = await Open();
+            db = Open();
             return db;
         }
         return db

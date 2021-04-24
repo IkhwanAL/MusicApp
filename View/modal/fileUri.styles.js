@@ -6,6 +6,6 @@ export default StyleSheet.create({
         justifyContent: 'space-between',
         marginHorizontal: 10,
         padding: 5,
-        paddingLeft: 10
+        paddingLeft: 10,
     },
 })
