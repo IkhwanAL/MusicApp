@@ -3,14 +3,15 @@ import { StyleSheet, Dimensions } from 'react-native'
 const { height, width } = Dimensions.get('window');
 export default StyleSheet.create({
     PictureViewer: {
-        width: 270,
-        height: 270,
+        width: 250,
+        height: 250,
+        justifyContent: 'center',
         marginTop: height / 13,
     },
     ImageStyle: {
-        width: 270,
+        width: 250,
         borderRadius: 180,
-        height: 270,
+        height: 250,
         position: 'absolute',
     }
 })

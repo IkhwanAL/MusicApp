@@ -12,6 +12,7 @@ import { db, insertFolder } from '../../logic/transaction/addDirectory';
 import ModalStyle from './screenModalPage.styles';
 import { AntDesign, Feather } from '@expo/vector-icons'
 import FileUriStyle from './fileUri.styles'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as FileSystem from 'expo-file-system';
 const { StorageAccessFramework } = FileSystem;
 
@@ -27,12 +28,13 @@ export default class ModalView extends React.Component {
     async selectFolder() {
         const SQLQuery = "select * from folder";
         db.transaction(tx => {
-            tx.executeSql(SQLQuery, [], (_, res) => {
+            tx.executeSql(SQLQuery, [], async (_, res) => {
                 const { _array, length } = res.rows;
                 if (length < 0) {
                     console.log("Data Not Found");
                 }
                 this.setState({ Folder: _array })
+                await AsyncStorage.setItem('@musicList', JSON.stringify(_array));
             })
         });
     }
@@ -40,29 +42,57 @@ export default class ModalView extends React.Component {
     Delete = (id) => {
         const sql = 'delete from folder where id = ?';
         db.transaction(tx => {
-            tx.executeSql(sql, [id], (_, res) => {
+            tx.executeSql(sql, [id], async (_, res) => {
                 this.setState((prevState) => {
                     const { Folder } = prevState;
                     const data = Object.entries(Folder);
                     const res = data.filter(([key, values]) => {
                         return values.id === id
                     });
-
+                    const newRes = Object.fromEntries(res);
                     return {
-                        Folder: Object.fromEntries(res)
+                        Folder: newRes
                     }
+                }, async function () {
+                    await AsyncStorage.setItem('@musicList', JSON.stringify(this.state.Folder))
                 })
+
             });
         }, (er) => console.log(er.message), () => {
             console.log('delete')
         });
 
     }
+    test = async () => {
+        // console.log("Async", await AsyncStorage.getItem('@musicList'));
+        const { Folder } = this.state;
+        const newArr = Object.entries(Folder);
+        let listUrl = [];
+        newArr.forEach(([key, values]) => {
+            listUrl.push(values.path);
+        })
+        let newData = [];
+        for (let i = 0; i < listUrl.length; i++) {
+            const FilesUrl = await StorageAccessFramework.readDirectoryAsync(listUrl[i]);
+            const data = newData.concat(FilesUrl);
+            newData = data;
+        }
+
+        const newResult = newData.filter(val => {
+            if (val.includes('.jpg')) {
+                return true
+            }
+        })
+        // await AsyncStorage.setItem('@musicList', JSON.stringify(newResult));
+        // const data = await AsyncStorage.getItem('@musicList');
+        // console.log(JSON.parse(data));
+    }
     componentDidMount() {
         const call = async () => {
             await this.selectFolder();
         }
         call();
+
     }
     componentDidUpdate(prevProps, prevState, snapshot) {
         const call = async () => {
@@ -153,7 +183,7 @@ export default class ModalView extends React.Component {
                     <View style={ModalStyle.InsideModalViewStyle}>
                         <View style={ModalStyle.ViewHeader}>
                             <View>
-                                <Text style={ModalStyle.TextHeader}>
+                                <Text style={ModalStyle.TextHeader} onPress={this.test}>
                                     Now Playing...
                                 </Text>
                             </View>

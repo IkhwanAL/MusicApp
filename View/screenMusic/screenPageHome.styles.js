@@ -19,6 +19,7 @@ export default StyleSheet.create({
     button: {
         shadowColor: '#000',
         elevation: 5,
+        // backgroundColor: '#0278AE',
         shadowOpacity: 1,
         shadowOffset: {
             width: 0,
@@ -28,12 +29,11 @@ export default StyleSheet.create({
     },
     ButtonPlaylistPosition: {
         alignItems: 'flex-end',
-        zIndex: 1,
+        // zIndex: 1,
         width: width,
-        // borderWidth: 1,
-        // borderColor: '#000',
+        position: 'absolute',
         right: 13,
-        top: height / 15,
+        top: height - 100,
     },
     ButtonStylePlaylist: {
         elevation: 5,
@@ -47,5 +47,12 @@ export default StyleSheet.create({
         top: 5,
         left: 3,
         borderRadius: 180,
+    },
+    FlatListStyle: {
+        backgroundColor: 'rgba(165, 236, 215, 0.6)',
+        maxHeight: 150,
+        borderRadius: 10,
+        width: width,
+        marginVertical: 10,
     }
 })
