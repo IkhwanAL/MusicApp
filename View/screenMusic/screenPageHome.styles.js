@@ -29,7 +29,6 @@ export default StyleSheet.create({
     },
     ButtonPlaylistPosition: {
         alignItems: 'flex-end',
-        // zIndex: 1,
         width: width,
         position: 'absolute',
         right: 13,
@@ -50,7 +49,7 @@ export default StyleSheet.create({
     },
     FlatListStyle: {
         backgroundColor: 'rgba(165, 236, 215, 0.6)',
-        maxHeight: 150,
+        height: 150,
         borderRadius: 10,
         width: width,
         marginVertical: 10,

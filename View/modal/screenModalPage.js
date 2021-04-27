@@ -8,7 +8,7 @@ import {
     FlatList,
     Alert,
 } from 'react-native';
-import { db, insertFolder } from '../../logic/transaction/addDirectory';
+import { db, insertFolder } from '../../controller/transaction/addDirectory';
 import ModalStyle from './screenModalPage.styles';
 import { AntDesign, Feather } from '@expo/vector-icons'
 import FileUriStyle from './fileUri.styles'
@@ -62,30 +62,6 @@ export default class ModalView extends React.Component {
             console.log('delete')
         });
 
-    }
-    test = async () => {
-        // console.log("Async", await AsyncStorage.getItem('@musicList'));
-        const { Folder } = this.state;
-        const newArr = Object.entries(Folder);
-        let listUrl = [];
-        newArr.forEach(([key, values]) => {
-            listUrl.push(values.path);
-        })
-        let newData = [];
-        for (let i = 0; i < listUrl.length; i++) {
-            const FilesUrl = await StorageAccessFramework.readDirectoryAsync(listUrl[i]);
-            const data = newData.concat(FilesUrl);
-            newData = data;
-        }
-
-        const newResult = newData.filter(val => {
-            if (val.includes('.jpg')) {
-                return true
-            }
-        })
-        // await AsyncStorage.setItem('@musicList', JSON.stringify(newResult));
-        // const data = await AsyncStorage.getItem('@musicList');
-        // console.log(JSON.parse(data));
     }
     componentDidMount() {
         const call = async () => {
@@ -183,7 +159,7 @@ export default class ModalView extends React.Component {
                     <View style={ModalStyle.InsideModalViewStyle}>
                         <View style={ModalStyle.ViewHeader}>
                             <View>
-                                <Text style={ModalStyle.TextHeader} onPress={this.test}>
+                                <Text style={ModalStyle.TextHeader}>
                                     Now Playing...
                                 </Text>
                             </View>

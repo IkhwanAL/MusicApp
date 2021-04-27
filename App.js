@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet, SafeAreaView } from 'react-native';
 import TopBar from './component/topBar/topBar.component';
 import HomeView from './View/screenMusic/screenPageHome.screen'
-import { CreateTableFolderLocation, DropTable } from './logic/transaction/addDirectory';
+import { CreateTableFolderLocation, DropTable } from './controller/transaction/addDirectory';
 
 export default class App extends React.Component {
   componentDidMount() {
