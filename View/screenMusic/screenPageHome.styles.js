@@ -9,8 +9,8 @@ export default StyleSheet.create({
         // paddingVertical: 20,
     },
     Title: {
-        fontSize: 24,
-        margin: 10,
+        fontSize: 18,
+        alignSelf: 'center'
     },
     MusicControl: {
         alignItems: 'center',

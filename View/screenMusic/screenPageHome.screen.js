@@ -16,13 +16,15 @@ export default class HomeView extends React.Component {
         super(props)
         this.state = {
             isPlaying: false,
-            File: {},
+            File: [],
             refresh: false,
-            musicToPlay: null,
+            musicToPlay: {},
             sound: null,
+            indexFile: null,
         }
-        // this.readDirectory = this.readDirectory.bind(this);
     }
+
+    _isMounted = false;
 
     onHandleClick = async () => {
         console.log("Loading Sound");
@@ -31,17 +33,14 @@ export default class HomeView extends React.Component {
         const { musicToPlay, isPlaying, sound } = this.state;
         const { id, path } = musicToPlay;
 
-        // if (sound !== null) {
-        //     console.log('Sound Already Played');
-        //     return
-        // }
-
+        if (!this._isMounted) {
+            return
+        }
         if (isPlaying) {
             if (sound !== null) {
                 this.setState({
                     isPlaying: false
                 })
-                sound.get
                 await sound.pauseAsync();
             }
         }
@@ -78,10 +77,12 @@ export default class HomeView extends React.Component {
     onRefresh = () => {
         this.setState({ refresh: true })
         this.onReturnObject(res => {
-            this.setState({
-                File: res,
-                refresh: false
-            })
+            if (this._isMounted) {
+                this.setState({
+                    File: res,
+                    refresh: false
+                })
+            }
         })
     }
 
@@ -125,7 +126,7 @@ export default class HomeView extends React.Component {
     extFileMusic(val) {
         if (typeof val === 'string') {
             if (val.toLowerCase().includes('.mp3') ||
-                val.toLowerCase().includes('.mp3') ||
+                val.toLowerCase().includes('.mp4') ||
                 val.toLowerCase().includes('.m4a') ||
                 val.toLowerCase().includes('.wav') ||
                 val.toLowerCase().includes('.aac') ||
@@ -153,7 +154,52 @@ export default class HomeView extends React.Component {
             </TouchableOpacity>
         )
     }
+
+    handleForwardButton = () => {
+        const { File, musicToPlay } = this.state;
+        if (this._isMounted) {
+
+            this.setState((prevState) => {
+                const { indexFile } = prevState;
+                let numIndex = indexFile;
+                if (numIndex > File.length - 2) {
+                    numIndex = 0;
+                } else {
+                    numIndex = numIndex + 1;
+                }
+                // console.log(numIndex);
+                return {
+                    musicToPlay: File[numIndex],
+                    indexFile: numIndex
+                }
+            }, () => { console.log(this.state.indexFile) })
+        }
+    }
+
+    handlePrevButton = () => {
+        const { File, musicToPlay } = this.state;
+        if (this._isMounted) {
+
+            this.setState((prevState) => {
+                const { indexFile } = prevState;
+                let numIndex = indexFile;
+                if (0 >= indexFile) {
+                    numIndex = File.length - 1;
+                } else {
+                    numIndex = numIndex - 1;
+                }
+                console.log(numIndex);
+                return {
+                    musicToPlay: File[numIndex],
+                    indexFile: numIndex
+                }
+            })
+        }
+    }
+
+
     componentDidMount() {
+        this._isMounted = true;
         this.onReturnObject(res => {
             let newForm = [];
             for (const [key, values] in Object.entries(res)) {
@@ -162,10 +208,13 @@ export default class HomeView extends React.Component {
                 newBlockOfObject['path'] = res[key];
                 newForm.push(newBlockOfObject);
             }
-            this.setState({
-                File: newForm,
-                musicToPlay: newForm[0]
-            })
+            if (this._isMounted) {
+                this.setState({
+                    File: newForm,
+                    musicToPlay: newForm[0],
+                    indexFile: 0
+                })
+            }
         })
     }
     renderItem = (props) => {
@@ -173,41 +222,40 @@ export default class HomeView extends React.Component {
         return (
             <View style={ModalStyle.List}>
                 <TouchableOpacity >
-                    <Text style={{ fontSize: 16 }}>{this.takeTitleFromPath(path)}</Text>
+                    <Text style={{ fontSize: 16 }}>{this.removeExtName(this.takeTitleFromPath(path))}</Text>
                 </TouchableOpacity>
             </View>
         )
     }
 
     componentWillUnmount() {
-        this.setState({
-            isPlaying: false,
-            File: {},
-            refresh: false,
-            musicToPlay: null,
-            sound: null,
-        });
+        this._isMounted = false;
     }
-
+    removeExtName = (path) => {
+        if (typeof path === 'string') {
+            const data = path.replace(/\.[^/.]+$/, "");
+            return data;
+        }
+    }
     render() {
-        const { refresh, File } = this.state;
+        const { refresh, File, musicToPlay } = this.state;
         return (
             <SafeAreaView style={HomeStyle.container}>
                 <PictureView />
                 <SliderView />
                 <View>
                     <Text style={HomeStyle.Title}>
-                        Colors
+                        {`${this.removeExtName(this.takeTitleFromPath(musicToPlay.path))}`}
                     </Text>
                 </View>
                 <View style={HomeStyle.MusicControl}>
-                    <TouchableOpacity style={HomeStyle.button}>
+                    <TouchableOpacity style={HomeStyle.button} onPress={this.handlePrevButton}>
                         <Ionicons name="ios-play-back" size={42} color="#E8FFC1" />
                     </TouchableOpacity>
                     {
                         this.handleButtonPlayPause()
                     }
-                    <TouchableOpacity style={HomeStyle.button}>
+                    <TouchableOpacity style={HomeStyle.button} onPress={this.handleForwardButton}>
                         <Ionicons name="ios-play-forward" size={42} color="#E8FFC1" />
                     </TouchableOpacity>
                 </View>
