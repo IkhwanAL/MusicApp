@@ -12,18 +12,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 const { StorageAccessFramework } = FileSystem
 
 export default class HomeView extends React.Component {
-    constructor() {
-        super()
-        this.state = {
-            Time: 0,
-            isPlaying: false,
-            File: [],
-            refresh: false,
-            musicToPlay: {},
-            playbackInstance: null,
-            indexFile: null,
-            isBuferring: false,
-        }
+    state = {
+        duration: 0,
+        isPlaying: false,
+        File: [],
+        refresh: false,
+        musicToPlay: {},
+        playbackInstance: null,
+        indexFile: null,
+        isBuferring: false,
     }
 
     _isMounted = false;
@@ -47,16 +44,19 @@ export default class HomeView extends React.Component {
         const source = {
             uri: musicToPlay[1]
         };
-
+        // console.log('im called 2')
         const status = {
             shouldPlay: isPlaying
         }
         try {
-            // await this.sleep(2000);
             playbackInstance.setOnPlaybackStatusUpdate(this.onPlaybackStatusUpdate);
             await playbackInstance.loadAsync(source, status, false);
+            const { durationMillis } = await playbackInstance.getStatusAsync();
 
-            this.setState({ playbackInstance });
+            this.setState({
+                playbackInstance: playbackInstance,
+                duration: durationMillis,
+            });
 
         } catch (error) {
             await playbackInstance.unloadAsync();
@@ -249,13 +249,6 @@ export default class HomeView extends React.Component {
             if (!(typeof res === 'object' || typeof res === 'function')) return
             if (Object.keys(res).length === 0) return
 
-            // let newForm = [];
-            // for (const [key, values] in Object.entries(res)) {
-            //     let newBlockOfObject = {};
-            //     newBlockOfObject['id'] = key;
-            //     newBlockOfObject['path'] = res[key];
-            //     newForm.push(newBlockOfObject);
-            // }
             const forms = Object.entries(res);
             if (this._isMounted) {
                 this.setState({
@@ -266,6 +259,13 @@ export default class HomeView extends React.Component {
                 this.loadAudio();
             }
         })
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        if (prevState.musicToPlay[1] === this.state.musicToPlay[1]) {
+            return
+        }
+        this.loadAudio();
 
     }
 
@@ -291,32 +291,17 @@ export default class HomeView extends React.Component {
         }
     }
 
-    onConvertTime = async (callback) => {
-        const { sound } = this.state;
-        if (sound === null) {
-            return
-        }
-        const { durationMillis } = await sound.getStatusAsync();
-        // const minutes = Math.floor(durationMillis / 60000);
-        // const second = ((durationMillis % 60000) / 1000).toFixed(0);
-        // const val = `${minutes}:${(second < 10) ? '0' : ''}${second}`;
-        callback(durationMillis, null);
-    }
-
     render() {
-        const { refresh, File, musicToPlay, Time } = this.state;
+        const { refresh, File, musicToPlay, duration } = this.state;
         const title = (musicToPlay.length === 0)
             ? 'No Title'
             : this.removeExtName(this.takeTitleFromPath(musicToPlay[1]));
-        // let time;
-        this.onConvertTime((val) => {
-            this.setState({ Time: val });
-        })
         return (
             <SafeAreaView style={HomeStyle.container}>
                 <PictureView />
                 <SliderView
-                    value={Time}
+                    mounted={true}
+                    duration={duration}
                 />
                 <View>
                     <Text style={HomeStyle.Title}>
