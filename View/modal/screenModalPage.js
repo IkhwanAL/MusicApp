@@ -25,6 +25,8 @@ export default class ModalView extends React.Component {
         Folder: [],
     }
 
+    _isMounted = false;
+
     async selectFolder() {
         const SQLQuery = "select * from folder";
         db.transaction(tx => {
@@ -43,23 +45,24 @@ export default class ModalView extends React.Component {
         const sql = 'delete from folder where id = ?';
         db.transaction(tx => {
             tx.executeSql(sql, [id], async (_, res) => {
-                this.setState((prevState) => {
-                    const { Folder } = prevState;
-                    const data = Object.entries(Folder);
-                    const res = data.filter(([key, values]) => {
-                        return values.id === id
-                    });
-                    const newRes = Object.fromEntries(res);
-                    return {
-                        Folder: newRes
-                    }
-                }, async function () {
-                    await AsyncStorage.setItem('@musicList', JSON.stringify(this.state.Folder))
-                })
-
+                if (this._isMounted) {
+                    this.setState((prevState) => {
+                        const { Folder } = prevState;
+                        const data = Object.entries(Folder);
+                        const res = data.filter(([key, values]) => {
+                            return values.id === id
+                        });
+                        const newRes = Object.fromEntries(res);
+                        return {
+                            Folder: newRes
+                        }
+                    }, async function () {
+                        await AsyncStorage.setItem('@musicList', JSON.stringify(this.state.Folder))
+                    })
+                }
             });
         }, (er) => console.log(er.message), () => {
-            console.log('delete')
+            console.log('Success Delete')
         });
 
     }
@@ -71,6 +74,7 @@ export default class ModalView extends React.Component {
 
     }
     componentDidUpdate(prevProps, prevState, snapshot) {
+        this._isMounted = true;
         const call = async () => {
             await this.selectFolder();
         }
@@ -79,7 +83,7 @@ export default class ModalView extends React.Component {
         }
     }
     componentWillUnmount() {
-        this.setState({ Folder: [] })
+        this._isMounted = false;
     }
 
     FileUrl = (itemId, FileUri) => {
@@ -141,6 +145,7 @@ export default class ModalView extends React.Component {
             const subFolder = root[1].split('%2F');
             await insertFolder(decodeURIComponent(subFolder[subFolder.length - 1]), uri)
             await this.selectFolder();
+            return
         } catch (error) {
             console.log(error.message);
         }

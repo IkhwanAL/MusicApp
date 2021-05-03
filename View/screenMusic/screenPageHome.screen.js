@@ -1,6 +1,6 @@
 import React from 'react';
 import { Audio } from 'expo-av'
-import { SafeAreaView, View, Text, TouchableOpacity, FlatList } from 'react-native';
+import { SafeAreaView, View, Text, TouchableOpacity, FlatList, Alert } from 'react-native';
 import HomeStyle from './screenPageHome.styles';
 import PictureView from '../../component/picture/PictureView.component';
 import SliderView from '../../component/slider/sliderVIew.component';
@@ -12,59 +12,86 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 const { StorageAccessFramework } = FileSystem
 
 export default class HomeView extends React.Component {
-    constructor(props) {
-        super(props)
+    constructor() {
+        super()
         this.state = {
+            Time: 0,
             isPlaying: false,
             File: [],
             refresh: false,
             musicToPlay: {},
-            sound: null,
+            playbackInstance: null,
             indexFile: null,
+            isBuferring: false,
         }
     }
 
     _isMounted = false;
 
-    onHandleClick = async () => {
-        console.log("Loading Sound");
-
-        const musicSound = new Audio.Sound();
-        const { musicToPlay, isPlaying, sound } = this.state;
-        const { id, path } = musicToPlay;
-
-        if (!this._isMounted) {
+    async loadAudio() {
+        const { isPlaying, musicToPlay } = this.state;
+        const playbackInstance = new Audio.Sound();
+        if (musicToPlay === null) {
+            Alert.alert(
+                'Something Error',
+                'Please Choose A Music To Play',
+                [
+                    {
+                        text: 'OK',
+                        style: 'destructive',
+                    }
+                ])
             return
         }
-        if (isPlaying) {
-            if (sound !== null) {
-                this.setState({
-                    isPlaying: false
-                })
-                await sound.pauseAsync();
-            }
-        }
 
-        await musicSound.loadAsync({ uri: path });
-        if (!isPlaying) {
+        const source = {
+            uri: musicToPlay[1]
+        };
+
+        const status = {
+            shouldPlay: isPlaying
+        }
+        try {
+            // await this.sleep(2000);
+            playbackInstance.setOnPlaybackStatusUpdate(this.onPlaybackStatusUpdate);
+            await playbackInstance.loadAsync(source, status, false);
+
+            this.setState({ playbackInstance });
+
+        } catch (error) {
+            await playbackInstance.unloadAsync();
+            console.log(error.message);
+        }
+    }
+
+    onHandleClick = async () => {
+        const { isPlaying, playbackInstance } = this.state;
+        // console.log(playbackInstance)
+        try {
+            isPlaying ? await playbackInstance.pauseAsync() : await playbackInstance.playAsync();
+
             this.setState({
-                isPlaying: true
+                isPlaying: !isPlaying,
             })
-            if (!musicToPlay) {
-                console.log("Choose A Music");
-                return
-            }
 
-            try {
-                await musicSound.playAsync();
-                this.setState({
-                    sound: musicSound
-                })
-            } catch (error) {
-                console.log(error.message);
-            }
+            const status = await playbackInstance.getStatusAsync();
+        } catch (error) {
+            console.log(error.message)
         }
 
+
+    }
+
+    onPlaybackStatusUpdate = status => {
+        this.setState({
+            isBuferring: status.isBuferring
+        })
+    }
+
+    sleep(ms) {
+        return new Promise(resolve => {
+            setTimeout(resolve, ms);
+        })
     }
 
     onReturnObject = async (callback) => {
@@ -76,10 +103,12 @@ export default class HomeView extends React.Component {
 
     onRefresh = () => {
         this.setState({ refresh: true })
-        this.onReturnObject(res => {
+        console.log('im in')
+        this.onReturnObject((res) => {
             if (this._isMounted) {
+
                 this.setState({
-                    File: res,
+                    File: Object.entries(res),
                     refresh: false
                 })
             }
@@ -88,17 +117,25 @@ export default class HomeView extends React.Component {
 
     readDirectory = async (getItem) => {
         if (getItem !== null) {
-            let res = JSON.parse(getItem);
-            const arrPath = Object.entries(res);
-            let listPath = [];
-            arrPath.forEach(([key, values]) => {
-                listPath.push(values.path);
-            })
-
+            const res = JSON.parse(getItem);
+            // const arrPath = Object.entries(res);
+            // let listPath = [];
             let listMusicFile = [];
+
+
+            // arrPath.forEach(([key, values]) => {
+            //     listPath.push(values.path);
+            // })
+
             try {
-                for (let i = 0; i < listPath.length; i++) {
-                    const file = await StorageAccessFramework.readDirectoryAsync(listPath[i]);
+                // for (let i = 0; i < listPath.length; i++) {
+                //     const file = await StorageAccessFramework.readDirectoryAsync(listPath[i]);
+                //     const pushData = listMusicFile.concat(file);
+                //     listMusicFile = pushData;
+                // }
+                for (const [key, values] of Object.entries(res)) {
+                    const path = values.path;
+                    const file = await StorageAccessFramework.readDirectoryAsync(path);
                     const pushData = listMusicFile.concat(file);
                     listMusicFile = pushData;
                 }
@@ -156,9 +193,9 @@ export default class HomeView extends React.Component {
     }
 
     handleForwardButton = () => {
-        const { File, musicToPlay } = this.state;
+        const { File, playbackInstance } = this.state;
         if (this._isMounted) {
-
+            playbackInstance.unloadAsync();
             this.setState((prevState) => {
                 const { indexFile } = prevState;
                 let numIndex = indexFile;
@@ -167,19 +204,19 @@ export default class HomeView extends React.Component {
                 } else {
                     numIndex = numIndex + 1;
                 }
-                // console.log(numIndex);
                 return {
                     musicToPlay: File[numIndex],
                     indexFile: numIndex
                 }
-            }, () => { console.log(this.state.indexFile) })
+            }, () => this.loadAudio())
+
         }
     }
 
     handlePrevButton = () => {
-        const { File, musicToPlay } = this.state;
+        const { File, playbackInstance } = this.state;
         if (this._isMounted) {
-
+            playbackInstance.unloadAsync();
             this.setState((prevState) => {
                 const { indexFile } = prevState;
                 let numIndex = indexFile;
@@ -188,64 +225,104 @@ export default class HomeView extends React.Component {
                 } else {
                     numIndex = numIndex - 1;
                 }
-                console.log(numIndex);
                 return {
                     musicToPlay: File[numIndex],
                     indexFile: numIndex
                 }
-            })
+            }, () => this.loadAudio())
+
         }
     }
 
-
-    componentDidMount() {
+    async componentDidMount() {
         this._isMounted = true;
+        await Audio.setAudioModeAsync({
+            allowsRecordingIOS: false,
+            interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+            playsInSilentModeIOS: true,
+            interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS,
+            shouldDuckAndroid: true,
+            staysActiveInBackground: true,
+            playThroughEarpieceAndroid: true,
+        })
         this.onReturnObject(res => {
-            let newForm = [];
-            for (const [key, values] in Object.entries(res)) {
-                let newBlockOfObject = {};
-                newBlockOfObject['id'] = key;
-                newBlockOfObject['path'] = res[key];
-                newForm.push(newBlockOfObject);
-            }
+            if (!(typeof res === 'object' || typeof res === 'function')) return
+            if (Object.keys(res).length === 0) return
+
+            // let newForm = [];
+            // for (const [key, values] in Object.entries(res)) {
+            //     let newBlockOfObject = {};
+            //     newBlockOfObject['id'] = key;
+            //     newBlockOfObject['path'] = res[key];
+            //     newForm.push(newBlockOfObject);
+            // }
+            const forms = Object.entries(res);
             if (this._isMounted) {
                 this.setState({
-                    File: newForm,
-                    musicToPlay: newForm[0],
-                    indexFile: 0
-                })
+                    File: forms,
+                    indexFile: 0,
+                    musicToPlay: forms[0],
+                });
+                this.loadAudio();
             }
         })
-    }
-    renderItem = (props) => {
-        const { item: { id, path } } = props;
-        return (
-            <View style={ModalStyle.List}>
-                <TouchableOpacity >
-                    <Text style={{ fontSize: 16 }}>{this.removeExtName(this.takeTitleFromPath(path))}</Text>
-                </TouchableOpacity>
-            </View>
-        )
+
     }
 
     componentWillUnmount() {
         this._isMounted = false;
     }
+
+    renderItem = (props) => {
+        const { item, index } = props;
+        return (
+            <View style={ModalStyle.List}>
+                <TouchableOpacity >
+                    <Text style={{ fontSize: 16 }}>{this.removeExtName(this.takeTitleFromPath(item[1]))}</Text>
+                </TouchableOpacity>
+            </View>
+        )
+    }
+
     removeExtName = (path) => {
         if (typeof path === 'string') {
             const data = path.replace(/\.[^/.]+$/, "");
             return data;
         }
     }
+
+    onConvertTime = async (callback) => {
+        const { sound } = this.state;
+        if (sound === null) {
+            return
+        }
+        const { durationMillis } = await sound.getStatusAsync();
+        // const minutes = Math.floor(durationMillis / 60000);
+        // const second = ((durationMillis % 60000) / 1000).toFixed(0);
+        // const val = `${minutes}:${(second < 10) ? '0' : ''}${second}`;
+        callback(durationMillis, null);
+    }
+
     render() {
-        const { refresh, File, musicToPlay } = this.state;
+        const { refresh, File, musicToPlay, Time } = this.state;
+        const title = (musicToPlay.length === 0)
+            ? 'No Title'
+            : this.removeExtName(this.takeTitleFromPath(musicToPlay[1]));
+        // let time;
+        this.onConvertTime((val) => {
+            this.setState({ Time: val });
+        })
         return (
             <SafeAreaView style={HomeStyle.container}>
                 <PictureView />
-                <SliderView />
+                <SliderView
+                    value={Time}
+                />
                 <View>
                     <Text style={HomeStyle.Title}>
-                        {`${this.removeExtName(this.takeTitleFromPath(musicToPlay.path))}`}
+                        {
+                            title
+                        }
                     </Text>
                 </View>
                 <View style={HomeStyle.MusicControl}>
@@ -264,8 +341,9 @@ export default class HomeView extends React.Component {
                         renderItem={this.renderItem}
                         data={File}
                         onScrollEndDrag={this.onRefresh}
-                        keyExtractor={(item, index) => item.id.toString()}
+                        keyExtractor={(item, index) => index.toString()}
                         removeClippedSubviews={true}
+                        extraData={File}
                         refreshing={refresh}
                         onRefresh={this.onRefresh}
                     />

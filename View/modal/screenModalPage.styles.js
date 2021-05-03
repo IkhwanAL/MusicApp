@@ -31,7 +31,6 @@ export default StyleSheet.create({
         maxHeight: 150,
     },
     TextList: {
-        // paddingLeft: 50,     
         fontSize: 16
     },
     TextHeader: {

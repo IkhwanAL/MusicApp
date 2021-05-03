@@ -21,8 +21,4 @@ export default StyleSheet.create({
     HeaderTextStyle: {
         fontSize: 24,
     },
-    IconButtonStyle: {
-        // borderColor: '#000',
-        // borderWidth: 1,
-    }
 })
