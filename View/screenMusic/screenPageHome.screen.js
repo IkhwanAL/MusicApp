@@ -13,7 +13,6 @@ const { StorageAccessFramework } = FileSystem
 
 export default class HomeView extends React.Component {
     state = {
-        duration: 0,
         isPlaying: false,
         File: [],
         refresh: false,
@@ -21,6 +20,8 @@ export default class HomeView extends React.Component {
         playbackInstance: null,
         indexFile: null,
         isBuferring: false,
+        position: 0,
+        duration: 0,
     }
 
     _isMounted = false;
@@ -44,24 +45,31 @@ export default class HomeView extends React.Component {
         const source = {
             uri: musicToPlay[1]
         };
-        // console.log('im called 2')
         const status = {
             shouldPlay: isPlaying
         }
         try {
             playbackInstance.setOnPlaybackStatusUpdate(this.onPlaybackStatusUpdate);
             await playbackInstance.loadAsync(source, status, false);
-            const { durationMillis } = await playbackInstance.getStatusAsync();
-
+            // console.log(playbackInstance);
             this.setState({
                 playbackInstance: playbackInstance,
-                duration: durationMillis,
             });
+            this._getStatus();
 
         } catch (error) {
             await playbackInstance.unloadAsync();
-            console.log(error.message);
+            console.log(error);
         }
+    }
+
+    _getStatus = async () => {
+        const { playbackInstance } = this.state;
+        const { durationMillis, positionMillis } = await playbackInstance.getStatusAsync();
+        this.setState({
+            duration: durationMillis,
+            position: positionMillis
+        })
     }
 
     onHandleClick = async () => {
@@ -73,8 +81,6 @@ export default class HomeView extends React.Component {
             this.setState({
                 isPlaying: !isPlaying,
             })
-
-            const status = await playbackInstance.getStatusAsync();
         } catch (error) {
             console.log(error.message)
         }
@@ -83,6 +89,7 @@ export default class HomeView extends React.Component {
     }
 
     onPlaybackStatusUpdate = status => {
+        // console.log(status)
         this.setState({
             isBuferring: status.isBuferring
         })
@@ -103,7 +110,6 @@ export default class HomeView extends React.Component {
 
     onRefresh = () => {
         this.setState({ refresh: true })
-        console.log('im in')
         this.onReturnObject((res) => {
             if (this._isMounted) {
 
@@ -118,21 +124,11 @@ export default class HomeView extends React.Component {
     readDirectory = async (getItem) => {
         if (getItem !== null) {
             const res = JSON.parse(getItem);
-            // const arrPath = Object.entries(res);
-            // let listPath = [];
+
             let listMusicFile = [];
 
-
-            // arrPath.forEach(([key, values]) => {
-            //     listPath.push(values.path);
-            // })
-
             try {
-                // for (let i = 0; i < listPath.length; i++) {
-                //     const file = await StorageAccessFramework.readDirectoryAsync(listPath[i]);
-                //     const pushData = listMusicFile.concat(file);
-                //     listMusicFile = pushData;
-                // }
+
                 for (const [key, values] of Object.entries(res)) {
                     const path = values.path;
                     const file = await StorageAccessFramework.readDirectoryAsync(path);
@@ -259,6 +255,7 @@ export default class HomeView extends React.Component {
                 this.loadAudio();
             }
         })
+
     }
 
     componentDidUpdate(prevProps, prevState) {
@@ -291,8 +288,13 @@ export default class HomeView extends React.Component {
         }
     }
 
+    ValueChange = (val) => {
+
+    }
+
     render() {
         const { refresh, File, musicToPlay, duration } = this.state;
+        // console.log(status)
         const title = (musicToPlay.length === 0)
             ? 'No Title'
             : this.removeExtName(this.takeTitleFromPath(musicToPlay[1]));

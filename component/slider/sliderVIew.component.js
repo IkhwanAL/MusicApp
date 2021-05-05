@@ -6,6 +6,7 @@ import SlideStyle from './sliderView.style'
 // const [isMounted, setMounted] = React.useState(false);
 
 const convertMilisToMinutes = (milis) => {
+    if (milis === null) return '03:24';
     const minutes = Math.floor(milis / 60000);
     const second = determineSecond(milis);
     const val = `${minutes}:${(second < 10 ? '0' : '') + second}`;
@@ -13,20 +14,21 @@ const convertMilisToMinutes = (milis) => {
 }
 
 const determineSecond = (milis) => {
+    if (milis === null) return
     const seconds = ((milis % 36000) / 1000).toFixed(0);
     return seconds
 }
 
 const SliderView = (props) => {
     const _isMounted = props.mounted;
-    if (!_isMounted) {
+    if (!_isMounted || props.duration === null) {
         return (
             <View>
 
             </View>
         )
     }
-    const seconds = +(props.duration / 1000).toFixed(0);
+    const seconds = +(props.duration / 1000).toFixed(0)
     return (
         <View>
             <Slider
