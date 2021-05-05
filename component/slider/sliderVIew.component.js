@@ -39,7 +39,8 @@ const SliderView = (props) => {
                 thumbTintColor="#FFF"
                 value={0}
                 style={SlideStyle.SliderStyle}
-                disabled={true}
+                // disabled={true}
+                onValueChange={props.onValueChange}
             />
             <View style={SlideStyle.TimelapseText}>
                 <Text>00:00</Text>

@@ -3,11 +3,14 @@ import { Audio } from 'expo-av'
 import { SafeAreaView, View, Text, TouchableOpacity, FlatList, Alert } from 'react-native';
 import HomeStyle from './screenPageHome.styles';
 import PictureView from '../../component/picture/PictureView.component';
-import SliderView from '../../component/slider/sliderVIew.component';
+// import SliderView from '../../component/slider/sliderVIew.component';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ModalStyle from '../modal/screenModalPage.styles';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import Slider from '@react-native-community/slider';
+import SlideStyle from '../../component/slider/sliderView.style';
+import { convertMilisToMinutes } from '../../utils/time';
 
 const { StorageAccessFramework } = FileSystem
 
@@ -65,16 +68,14 @@ export default class HomeView extends React.Component {
 
     _getStatus = async () => {
         const { playbackInstance } = this.state;
-        const { durationMillis, positionMillis } = await playbackInstance.getStatusAsync();
+        const { durationMillis } = await playbackInstance.getStatusAsync();
         this.setState({
-            duration: durationMillis,
-            position: positionMillis
+            duration: durationMillis
         })
     }
 
     onHandleClick = async () => {
         const { isPlaying, playbackInstance } = this.state;
-        // console.log(playbackInstance)
         try {
             isPlaying ? await playbackInstance.pauseAsync() : await playbackInstance.playAsync();
 
@@ -84,8 +85,6 @@ export default class HomeView extends React.Component {
         } catch (error) {
             console.log(error.message)
         }
-
-
     }
 
     onPlaybackStatusUpdate = status => {
@@ -258,12 +257,11 @@ export default class HomeView extends React.Component {
 
     }
 
-    componentDidUpdate(prevProps, prevState) {
-        if (prevState.musicToPlay[1] === this.state.musicToPlay[1]) {
+    async componentDidUpdate(prevProps, prevState) {
+        if (prevState.indexFile === this.state.indexFile) {
             return
         }
         this.loadAudio();
-
     }
 
     componentWillUnmount() {
@@ -288,23 +286,38 @@ export default class HomeView extends React.Component {
         }
     }
 
-    ValueChange = (val) => {
-
+    ValueChange = async (val) => {
+        const { playbackInstance } = this.state;
+        await playbackInstance.setPositionAsync(val * 1000);
     }
 
     render() {
         const { refresh, File, musicToPlay, duration } = this.state;
-        // console.log(status)
+
         const title = (musicToPlay.length === 0)
             ? 'No Title'
             : this.removeExtName(this.takeTitleFromPath(musicToPlay[1]));
+
+        const seconds = +(duration / 1000).toFixed(0);
         return (
             <SafeAreaView style={HomeStyle.container}>
                 <PictureView />
-                <SliderView
-                    mounted={true}
-                    duration={duration}
-                />
+                <View>
+                    <Slider
+                        minimumValue={0}
+                        maximumValue={seconds}
+                        minimumTrackTintColor="#E8FFC1"
+                        maximumTrackTintColor="#C4C4C4"
+                        thumbTintColor="#FFF"
+                        value={0}
+                        style={SlideStyle.SliderStyle}
+                        onValueChange={this.ValueChange}
+                    />
+                    <View style={SlideStyle.TimelapseText}>
+                        <Text>00:00</Text>
+                        <Text>{convertMilisToMinutes(duration)}</Text>
+                    </View>
+                </View>
                 <View>
                     <Text style={HomeStyle.Title}>
                         {
