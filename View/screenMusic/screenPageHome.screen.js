@@ -25,6 +25,7 @@ export default class HomeView extends React.Component {
         isBuferring: false,
         position: 0,
         duration: 0,
+        interval: null,
     }
 
     _isMounted = false;
@@ -70,19 +71,32 @@ export default class HomeView extends React.Component {
         const { playbackInstance } = this.state;
         const { durationMillis } = await playbackInstance.getStatusAsync();
         this.setState({
-            duration: durationMillis
+            duration: durationMillis,
+            position: 0,
         })
     }
 
+
+
     onHandleClick = async () => {
-        const { isPlaying, playbackInstance } = this.state;
+        const { isPlaying, playbackInstance, interval } = this.state;
         try {
-            isPlaying ? await playbackInstance.pauseAsync() : await playbackInstance.playAsync();
+            if (isPlaying) {
+                clearInterval(interval);
+                await playbackInstance.pauseAsync();
+            }
+            if (!isPlaying) {
+                this.setState({
+                    interval: setInterval(this.updateValuePosition, 1000)
+                })
+                await playbackInstance.playAsync();
+            }
 
             this.setState({
                 isPlaying: !isPlaying,
             })
         } catch (error) {
+            await playbackInstance.unloadAsync();
             console.log(error.message)
         }
     }
@@ -291,8 +305,17 @@ export default class HomeView extends React.Component {
         await playbackInstance.setPositionAsync(val * 1000);
     }
 
+    updateValuePosition = () => {
+        if (this._isMounted)
+            this.setState((prevState) => {
+                return {
+                    position: prevState.position + 1,
+                }
+            })
+    }
+
     render() {
-        const { refresh, File, musicToPlay, duration } = this.state;
+        const { refresh, File, musicToPlay, duration, position } = this.state;
 
         const title = (musicToPlay.length === 0)
             ? 'No Title'
@@ -309,9 +332,10 @@ export default class HomeView extends React.Component {
                         minimumTrackTintColor="#E8FFC1"
                         maximumTrackTintColor="#C4C4C4"
                         thumbTintColor="#FFF"
-                        value={0}
+                        value={position}
                         style={SlideStyle.SliderStyle}
                         onValueChange={this.ValueChange}
+
                     />
                     <View style={SlideStyle.TimelapseText}>
                         <Text>00:00</Text>
