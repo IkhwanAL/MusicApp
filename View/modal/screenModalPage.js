@@ -34,6 +34,7 @@ export default class ModalView extends React.Component {
                 const { _array, length } = res.rows;
                 if (length < 0) {
                     console.log("Data Not Found");
+                    return
                 }
                 this.setState({ Folder: _array })
                 await AsyncStorage.setItem('@musicList', JSON.stringify(_array));
@@ -44,11 +45,11 @@ export default class ModalView extends React.Component {
     Delete = (id) => {
         const sql = 'delete from folder where id = ?';
         db.transaction(tx => {
-            tx.executeSql(sql, [id], async (_, res) => {
+            tx.executeSql(sql, [id], async () => {
                 if (this._isMounted) {
                     this.setState((prevState) => {
                         const { Folder } = prevState;
-                        const data = Object.entries(Folder);
+                        const data = Object.entries(Folder); // Multi Dimension Array
                         const res = data.filter(([key, values]) => {
                             return values.id === id
                         });

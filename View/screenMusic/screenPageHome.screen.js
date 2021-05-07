@@ -23,8 +23,8 @@ export default class HomeView extends React.Component {
         playbackInstance: null,
         indexFile: null,
         isBuferring: false,
-        position: 0,
-        duration: 0,
+        position: 0, // seconds
+        duration: 0, // seconds
         interval: null,
     }
 
@@ -55,13 +55,13 @@ export default class HomeView extends React.Component {
         try {
             playbackInstance.setOnPlaybackStatusUpdate(this.onPlaybackStatusUpdate);
             await playbackInstance.loadAsync(source, status, false);
-            // console.log(playbackInstance);
             this.setState({
                 playbackInstance: playbackInstance,
             });
             this._getStatus();
 
         } catch (error) {
+            await this.sleep(2000);
             await playbackInstance.unloadAsync();
             console.log(error);
         }
@@ -75,8 +75,6 @@ export default class HomeView extends React.Component {
             position: 0,
         })
     }
-
-
 
     onHandleClick = async () => {
         const { isPlaying, playbackInstance, interval } = this.state;
@@ -96,6 +94,7 @@ export default class HomeView extends React.Component {
                 isPlaying: !isPlaying,
             })
         } catch (error) {
+            await this.sleep(3000);
             await playbackInstance.unloadAsync();
             console.log(error.message)
         }
@@ -116,16 +115,26 @@ export default class HomeView extends React.Component {
 
     onReturnObject = async (callback) => {
         const fetchItem = await AsyncStorage.getItem('@musicList');
+        if (fetchItem === null) {
+            callback(null);
+            return
+        }
         const data = await this.readDirectory(fetchItem);
+        if (data === null) {
+            callback(null);
+            return
+        }
         const convert = Object.fromEntries(data);
-        callback(convert, null);
+        callback(convert);
     }
 
     onRefresh = () => {
         this.setState({ refresh: true })
         this.onReturnObject((res) => {
+            if (res === null) {
+                return
+            }
             if (this._isMounted) {
-
                 this.setState({
                     File: Object.entries(res),
                     refresh: false
@@ -141,7 +150,6 @@ export default class HomeView extends React.Component {
             let listMusicFile = [];
 
             try {
-
                 for (const [key, values] of Object.entries(res)) {
                     const path = values.path;
                     const file = await StorageAccessFramework.readDirectoryAsync(path);
@@ -201,10 +209,11 @@ export default class HomeView extends React.Component {
         )
     }
 
-    handleForwardButton = () => {
+    handleForwardButton = async () => {
         const { File, playbackInstance } = this.state;
         if (this._isMounted) {
-            playbackInstance.unloadAsync();
+            await this.sleep(2000);
+            await playbackInstance.unloadAsync();
             this.setState((prevState) => {
                 const { indexFile } = prevState;
                 let numIndex = indexFile;
@@ -222,10 +231,11 @@ export default class HomeView extends React.Component {
         }
     }
 
-    handlePrevButton = () => {
+    handlePrevButton = async () => {
         const { File, playbackInstance } = this.state;
         if (this._isMounted) {
-            playbackInstance.unloadAsync();
+            await this.sleep(2000);
+            await playbackInstance.unloadAsync();
             this.setState((prevState) => {
                 const { indexFile } = prevState;
                 let numIndex = indexFile;
@@ -302,7 +312,17 @@ export default class HomeView extends React.Component {
 
     ValueChange = async (val) => {
         const { playbackInstance } = this.state;
-        await playbackInstance.setPositionAsync(val * 1000);
+        try {
+            await playbackInstance.setPositionAsync(val * 1000); // mili second
+            this.setState({
+                position: val.toFixed(0),
+            });
+        } catch (error) {
+            await this.sleep(2000);
+            await playbackInstance.unloadAsync();
+            console.log(error.message);
+        }
+
     }
 
     updateValuePosition = () => {
@@ -313,7 +333,16 @@ export default class HomeView extends React.Component {
                 }
             })
     }
-
+    onSlideComplete = () => {
+        console.log('im in');
+        const { interval } = this.state;
+        clearInterval(interval);
+        this.setState({
+            position: 0
+        })
+        this.handleForwardButton();
+        this.onHandleClick();
+    }
     render() {
         const { refresh, File, musicToPlay, duration, position } = this.state;
 
@@ -328,14 +357,13 @@ export default class HomeView extends React.Component {
                 <View>
                     <Slider
                         minimumValue={0}
-                        maximumValue={seconds}
+                        maximumValue={seconds} // seconds
                         minimumTrackTintColor="#E8FFC1"
                         maximumTrackTintColor="#C4C4C4"
                         thumbTintColor="#FFF"
-                        value={position}
+                        value={position} // second
                         style={SlideStyle.SliderStyle}
                         onValueChange={this.ValueChange}
-
                     />
                     <View style={SlideStyle.TimelapseText}>
                         <Text>00:00</Text>

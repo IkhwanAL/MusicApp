@@ -13,4 +13,5 @@ const PictureView = () => {
     )
 }
 
+
 export default PictureView;
