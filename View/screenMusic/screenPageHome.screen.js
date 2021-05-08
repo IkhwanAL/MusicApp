@@ -3,14 +3,13 @@ import { Audio } from 'expo-av'
 import { SafeAreaView, View, Text, TouchableOpacity, FlatList, Alert } from 'react-native';
 import HomeStyle from './screenPageHome.styles';
 import PictureView from '../../component/picture/PictureView.component';
-// import SliderView from '../../component/slider/sliderVIew.component';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ModalStyle from '../modal/screenModalPage.styles';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Slider from '@react-native-community/slider';
 import SlideStyle from '../../component/slider/sliderView.style';
-import { convertMilisToMinutes } from '../../utils/time';
+import { convertMilisToMinutes, convertSecondToMinutes, convertMilisToSecond } from '../../utils/time';
 
 const { StorageAccessFramework } = FileSystem
 
@@ -24,7 +23,7 @@ export default class HomeView extends React.Component {
         indexFile: null,
         isBuferring: false,
         position: 0, // seconds
-        duration: 0, // seconds
+        duration: 0, // milis
         interval: null,
     }
 
@@ -58,6 +57,7 @@ export default class HomeView extends React.Component {
             this.setState({
                 playbackInstance: playbackInstance,
             });
+            await this.sleep(1000);
             this._getStatus();
 
         } catch (error) {
@@ -100,8 +100,13 @@ export default class HomeView extends React.Component {
         }
     }
 
-    onPlaybackStatusUpdate = status => {
-        // console.log(status)
+    onPlaybackStatusUpdate = status => { // Read Buffer in Memory
+        if (status.didJustFinish) {
+            this.setState({
+                position: 0,
+            })
+            this.handleForwardButton();
+        }
         this.setState({
             isBuferring: status.isBuferring
         })
@@ -212,43 +217,55 @@ export default class HomeView extends React.Component {
     handleForwardButton = async () => {
         const { File, playbackInstance } = this.state;
         if (this._isMounted) {
-            await this.sleep(2000);
-            await playbackInstance.unloadAsync();
-            this.setState((prevState) => {
-                const { indexFile } = prevState;
-                let numIndex = indexFile;
-                if (numIndex > File.length - 2) {
-                    numIndex = 0;
-                } else {
-                    numIndex = numIndex + 1;
-                }
-                return {
-                    musicToPlay: File[numIndex],
-                    indexFile: numIndex
-                }
-            }, () => this.loadAudio())
+            try {
+                await this.sleep(1000);
+                await playbackInstance.unloadAsync();
 
+                this.setState((prevState) => {
+                    const { indexFile } = prevState;
+                    let numIndex = indexFile;
+                    if (numIndex > File.length - 2) {
+                        numIndex = 0;
+                    } else {
+                        numIndex = numIndex + 1;
+                    }
+                    return {
+                        musicToPlay: File[numIndex],
+                        indexFile: numIndex,
+                        position: 0,
+                    }
+                }, () => this.loadAudio())
+            } catch (error) {
+                console.log(error.message);
+            }
         }
     }
 
     handlePrevButton = async () => {
         const { File, playbackInstance } = this.state;
         if (this._isMounted) {
-            await this.sleep(2000);
-            await playbackInstance.unloadAsync();
-            this.setState((prevState) => {
-                const { indexFile } = prevState;
-                let numIndex = indexFile;
-                if (0 >= indexFile) {
-                    numIndex = File.length - 1;
-                } else {
-                    numIndex = numIndex - 1;
-                }
-                return {
-                    musicToPlay: File[numIndex],
-                    indexFile: numIndex
-                }
-            }, () => this.loadAudio())
+            try {
+                await this.sleep(2000);
+                await playbackInstance.unloadAsync();
+
+                this.setState((prevState) => {
+                    const { indexFile } = prevState;
+                    let numIndex = indexFile;
+                    if (0 >= indexFile) {
+                        numIndex = File.length - 1;
+                    } else {
+                        numIndex = numIndex - 1;
+                    }
+                    return {
+                        musicToPlay: File[numIndex],
+                        indexFile: numIndex,
+                        position: 0,
+                    }
+                }, () => this.loadAudio())
+            } catch (error) {
+                console.log(error.message)
+            }
+
 
         }
     }
@@ -281,13 +298,6 @@ export default class HomeView extends React.Component {
 
     }
 
-    async componentDidUpdate(prevProps, prevState) {
-        if (prevState.indexFile === this.state.indexFile) {
-            return
-        }
-        this.loadAudio();
-    }
-
     componentWillUnmount() {
         this._isMounted = false;
     }
@@ -313,16 +323,17 @@ export default class HomeView extends React.Component {
     ValueChange = async (val) => {
         const { playbackInstance } = this.state;
         try {
-            await playbackInstance.setPositionAsync(val * 1000); // mili second
+            const value = +val;
+            await playbackInstance.setPositionAsync(value * 1000); // mili second
+
             this.setState({
-                position: val.toFixed(0),
+                position: +value.toFixed(0),
             });
         } catch (error) {
             await this.sleep(2000);
             await playbackInstance.unloadAsync();
             console.log(error.message);
         }
-
     }
 
     updateValuePosition = () => {
@@ -333,16 +344,6 @@ export default class HomeView extends React.Component {
                 }
             })
     }
-    onSlideComplete = () => {
-        console.log('im in');
-        const { interval } = this.state;
-        clearInterval(interval);
-        this.setState({
-            position: 0
-        })
-        this.handleForwardButton();
-        this.onHandleClick();
-    }
     render() {
         const { refresh, File, musicToPlay, duration, position } = this.state;
 
@@ -350,7 +351,8 @@ export default class HomeView extends React.Component {
             ? 'No Title'
             : this.removeExtName(this.takeTitleFromPath(musicToPlay[1]));
 
-        const seconds = +(duration / 1000).toFixed(0);
+        const seconds = convertMilisToSecond(duration);
+
         return (
             <SafeAreaView style={HomeStyle.container}>
                 <PictureView />
@@ -366,7 +368,7 @@ export default class HomeView extends React.Component {
                         onValueChange={this.ValueChange}
                     />
                     <View style={SlideStyle.TimelapseText}>
-                        <Text>00:00</Text>
+                        <Text>{convertSecondToMinutes(position)}</Text>
                         <Text>{convertMilisToMinutes(duration)}</Text>
                     </View>
                 </View>

@@ -68,6 +68,7 @@ export default class ModalView extends React.Component {
 
     }
     componentDidMount() {
+        this._isMounted = true;
         const call = async () => {
             await this.selectFolder();
         }
@@ -75,7 +76,6 @@ export default class ModalView extends React.Component {
 
     }
     componentDidUpdate(prevProps, prevState, snapshot) {
-        this._isMounted = true;
         const call = async () => {
             await this.selectFolder();
         }
@@ -151,6 +151,7 @@ export default class ModalView extends React.Component {
             console.log(error.message);
         }
     }
+
     render() {
         const { Folder } = this.state;
         const { visible, onRequestClose } = this.props;

@@ -1,6 +1,6 @@
 import { StyleSheet, Dimensions } from 'react-native'
 
-const { height, width } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 export default StyleSheet.create({
     PictureViewer: {
         width: 250,

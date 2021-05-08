@@ -11,9 +11,11 @@ const TopBar = () => {
     const onClickBar = () => {
         setVisible(true)
     }
+
     const onHandleClose = () => {
         setVisible(false)
     }
+
     return (
         <React.Fragment>
             <View style={TopBarStyle.contain}>
