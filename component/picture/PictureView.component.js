@@ -1,13 +1,18 @@
 import React from 'react';
-import { View, Image } from 'react-native';
+import { View, Image, requireNativeComponent } from 'react-native';
 import Picture from './PictureView.styles';
 
-const PictureView = () => {
+const PictureView = (props) => {
+    let uri;
+    if (Object.keys(props).length === 0) {
+        uri = require('../../assets/e.jpeg');
+    }
+
     return (
         <View style={Picture.PictureViewer}>
             <Image
                 style={Picture.ImageStyle}
-                source={require('../../assets/e.jpeg')}
+                source={uri}
             />
         </View>
     )

@@ -57,13 +57,12 @@ export default class HomeView extends React.Component {
             this.setState({
                 playbackInstance: playbackInstance,
             });
-            await this.sleep(1000);
             this._getStatus();
 
         } catch (error) {
             await this.sleep(2000);
             await playbackInstance.unloadAsync();
-            console.log(error);
+            console.log(error.message);
         }
     }
 
@@ -94,7 +93,7 @@ export default class HomeView extends React.Component {
                 isPlaying: !isPlaying,
             })
         } catch (error) {
-            await this.sleep(3000);
+            await this.sleep(2000);
             await playbackInstance.unloadAsync();
             console.log(error.message)
         }
@@ -245,7 +244,7 @@ export default class HomeView extends React.Component {
         const { File, playbackInstance } = this.state;
         if (this._isMounted) {
             try {
-                await this.sleep(2000);
+                await this.sleep(1000);
                 await playbackInstance.unloadAsync();
 
                 this.setState((prevState) => {
@@ -305,12 +304,36 @@ export default class HomeView extends React.Component {
     renderItem = (props) => {
         const { item, index } = props;
         return (
-            <View style={ModalStyle.List}>
-                <TouchableOpacity >
-                    <Text style={{ fontSize: 16 }}>{this.removeExtName(this.takeTitleFromPath(item[1]))}</Text>
-                </TouchableOpacity>
-            </View>
+            // <View style={ModalStyle.List} >
+            <TouchableOpacity style={ModalStyle.List} onPress={() => this.chooseMusic(index)}>
+                <Text style={{ fontSize: 16 }}>{this.removeExtName(this.takeTitleFromPath(item[1]))}</Text>
+            </TouchableOpacity>
+            // </View>
         )
+    }
+
+    text = (index) => {
+        console.log('im in 0', index);
+    }
+
+    chooseMusic = async (index) => {
+        const { File, playbackInstance } = this.state;
+        try {
+            if (Object.keys(playbackInstance).length !== 0) {
+                await playbackInstance.unloadAsync();
+            }
+            this.setState({
+                musicToPlay: File[index],
+                position: 0,
+                indexFile: index,
+            })
+            this.loadAudio();
+
+        } catch (error) {
+            await this.sleep(1000);
+            await playbackInstance.unloadAsync();
+            console.log(error.message);
+        }
     }
 
     removeExtName = (path) => {
@@ -345,7 +368,7 @@ export default class HomeView extends React.Component {
             })
     }
     render() {
-        const { refresh, File, musicToPlay, duration, position } = this.state;
+        const { refresh, File, musicToPlay, duration, position, indexFile } = this.state;
 
         const title = (musicToPlay.length === 0)
             ? 'No Title'
@@ -397,7 +420,7 @@ export default class HomeView extends React.Component {
                         onScrollEndDrag={this.onRefresh}
                         keyExtractor={(item, index) => index.toString()}
                         removeClippedSubviews={true}
-                        extraData={File}
+                        extraData={indexFile}
                         refreshing={refresh}
                         onRefresh={this.onRefresh}
                     />
