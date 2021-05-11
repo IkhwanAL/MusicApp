@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image, requireNativeComponent } from 'react-native';
+import { View, Image } from 'react-native';
 import Picture from './PictureView.styles';
 
 const PictureView = (props) => {

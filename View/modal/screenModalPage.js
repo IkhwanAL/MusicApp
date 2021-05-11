@@ -139,7 +139,7 @@ export default class ModalView extends React.Component {
             const root = uri.split('%3A');
 
             if (!root.indexOf('%2F')) {
-                insertFolder(decodeURIComponent(root[root.length - 1]), uri);
+                await insertFolder(decodeURIComponent(root[root.length - 1]), uri);
                 return
             }
 

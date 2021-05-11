@@ -5,13 +5,11 @@ import HomeStyle from './screenPageHome.styles';
 import PictureView from '../../component/picture/PictureView.component';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import ModalStyle from '../modal/screenModalPage.styles';
-import * as FileSystem from 'expo-file-system';
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { onReturnObject, removeExtName, takeTitleFromPath } from '../../utils/file';
+import { sleep } from '../../utils/other';
 import Slider from '@react-native-community/slider';
 import SlideStyle from '../../component/slider/sliderView.style';
 import { convertMilisToMinutes, convertSecondToMinutes, convertMilisToSecond } from '../../utils/time';
-
-const { StorageAccessFramework } = FileSystem
 
 export default class HomeView extends React.Component {
     state = {
@@ -60,7 +58,7 @@ export default class HomeView extends React.Component {
             this._getStatus();
 
         } catch (error) {
-            await this.sleep(2000);
+            await sleep(2000);
             await playbackInstance.unloadAsync();
             console.log(error.message);
         }
@@ -93,7 +91,7 @@ export default class HomeView extends React.Component {
                 isPlaying: !isPlaying,
             })
         } catch (error) {
-            await this.sleep(2000);
+            await sleep(2000);
             await playbackInstance.unloadAsync();
             console.log(error.message)
         }
@@ -111,30 +109,9 @@ export default class HomeView extends React.Component {
         })
     }
 
-    sleep(ms) {
-        return new Promise(resolve => {
-            setTimeout(resolve, ms);
-        })
-    }
-
-    onReturnObject = async (callback) => {
-        const fetchItem = await AsyncStorage.getItem('@musicList');
-        if (fetchItem === null) {
-            callback(null);
-            return
-        }
-        const data = await this.readDirectory(fetchItem);
-        if (data === null) {
-            callback(null);
-            return
-        }
-        const convert = Object.fromEntries(data);
-        callback(convert);
-    }
-
     onRefresh = () => {
         this.setState({ refresh: true })
-        this.onReturnObject((res) => {
+        onReturnObject((res) => {
             if (res === null) {
                 return
             }
@@ -145,56 +122,6 @@ export default class HomeView extends React.Component {
                 })
             }
         })
-    }
-
-    readDirectory = async (getItem) => {
-        if (getItem !== null) {
-            const res = JSON.parse(getItem);
-
-            let listMusicFile = [];
-
-            try {
-                for (const [key, values] of Object.entries(res)) {
-                    const path = values.path;
-                    const file = await StorageAccessFramework.readDirectoryAsync(path);
-                    const pushData = listMusicFile.concat(file);
-                    listMusicFile = pushData;
-                }
-            } catch (error) {
-                console.log(error.message)
-                return
-            }
-            const extMP3 = listMusicFile.filter(val => {
-                if ((typeof val === 'string')) {
-                    const title = this.takeTitleFromPath(val);
-                    return this.extFileMusic(title);
-                }
-            })
-            return Object.entries(extMP3);
-        }
-    }
-
-    takeTitleFromPath = (path) => {
-        const splitPunctuation = decodeURIComponent(path).split(':');
-        const takeLastIndex = splitPunctuation[splitPunctuation.length - 1];
-        const searchPunc = takeLastIndex.search('/');
-        return takeLastIndex.substr(searchPunc + 1, takeLastIndex.length);
-    }
-
-    extFileMusic(val) {
-        if (typeof val === 'string') {
-            if (val.toLowerCase().includes('.mp3') ||
-                val.toLowerCase().includes('.mp4') ||
-                val.toLowerCase().includes('.m4a') ||
-                val.toLowerCase().includes('.wav') ||
-                val.toLowerCase().includes('.aac') ||
-                val.toLowerCase().includes('.wma') ||
-                val.toLowerCase().includes('.flac')
-            ) {
-                return true
-            }
-        }
-        return false
     }
 
     handleButtonPlayPause = () => {
@@ -217,7 +144,7 @@ export default class HomeView extends React.Component {
         const { File, playbackInstance } = this.state;
         if (this._isMounted) {
             try {
-                await this.sleep(1000);
+                await sleep(1000);
                 await playbackInstance.unloadAsync();
 
                 this.setState((prevState) => {
@@ -244,7 +171,7 @@ export default class HomeView extends React.Component {
         const { File, playbackInstance } = this.state;
         if (this._isMounted) {
             try {
-                await this.sleep(1000);
+                await sleep(1000);
                 await playbackInstance.unloadAsync();
 
                 this.setState((prevState) => {
@@ -280,7 +207,7 @@ export default class HomeView extends React.Component {
             staysActiveInBackground: true,
             playThroughEarpieceAndroid: true,
         })
-        this.onReturnObject(res => {
+        onReturnObject(res => {
             if (!(typeof res === 'object' || typeof res === 'function')) return
             if (Object.keys(res).length === 0) return
 
@@ -304,16 +231,10 @@ export default class HomeView extends React.Component {
     renderItem = (props) => {
         const { item, index } = props;
         return (
-            // <View style={ModalStyle.List} >
             <TouchableOpacity style={ModalStyle.List} onPress={() => this.chooseMusic(index)}>
                 <Text style={{ fontSize: 16 }}>{this.removeExtName(this.takeTitleFromPath(item[1]))}</Text>
             </TouchableOpacity>
-            // </View>
         )
-    }
-
-    text = (index) => {
-        console.log('im in 0', index);
     }
 
     chooseMusic = async (index) => {
@@ -336,13 +257,6 @@ export default class HomeView extends React.Component {
         }
     }
 
-    removeExtName = (path) => {
-        if (typeof path === 'string') {
-            const data = path.replace(/\.[^/.]+$/, "");
-            return data;
-        }
-    }
-
     ValueChange = async (val) => {
         const { playbackInstance } = this.state;
         try {
@@ -353,7 +267,7 @@ export default class HomeView extends React.Component {
                 position: +value.toFixed(0),
             });
         } catch (error) {
-            await this.sleep(2000);
+            await sleep(2000);
             await playbackInstance.unloadAsync();
             console.log(error.message);
         }
@@ -372,7 +286,7 @@ export default class HomeView extends React.Component {
 
         const title = (musicToPlay.length === 0)
             ? 'No Title'
-            : this.removeExtName(this.takeTitleFromPath(musicToPlay[1]));
+            : removeExtName(takeTitleFromPath(musicToPlay[1]));
 
         const seconds = convertMilisToSecond(duration);
 
