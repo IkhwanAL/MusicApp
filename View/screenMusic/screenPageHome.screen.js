@@ -10,6 +10,7 @@ import { sleep } from '../../utils/other';
 import Slider from '@react-native-community/slider';
 import SlideStyle from '../../component/slider/sliderView.style';
 import { convertMilisToMinutes, convertSecondToMinutes, convertMilisToSecond } from '../../utils/time';
+import Playlist from '../playlist/playlist.screen';
 
 export default class HomeView extends React.Component {
     state = {
@@ -23,6 +24,7 @@ export default class HomeView extends React.Component {
         position: 0, // seconds
         duration: 0, // milis
         interval: null,
+        visiblePlaylist: false,
     }
 
     _isMounted = false;
@@ -232,7 +234,7 @@ export default class HomeView extends React.Component {
         const { item, index } = props;
         return (
             <TouchableOpacity style={ModalStyle.List} onPress={() => this.chooseMusic(index)}>
-                <Text style={{ fontSize: 16 }}>{this.removeExtName(this.takeTitleFromPath(item[1]))}</Text>
+                <Text style={{ fontSize: 16 }}>{removeExtName(takeTitleFromPath(item[1]))}</Text>
             </TouchableOpacity>
         )
     }
@@ -251,7 +253,7 @@ export default class HomeView extends React.Component {
             this.loadAudio();
 
         } catch (error) {
-            await this.sleep(1000);
+            await sleep(1000);
             await playbackInstance.unloadAsync();
             console.log(error.message);
         }
@@ -281,8 +283,21 @@ export default class HomeView extends React.Component {
                 }
             })
     }
+
+    onShowModalAddPlaylist = () => {
+        this.setState({
+            visiblePlaylist: true
+        })
+    }
+
+    onCloseModalAddPlaylist = () => {
+        this.setState({
+            visiblePlaylist: false
+        })
+    }
+
     render() {
-        const { refresh, File, musicToPlay, duration, position, indexFile } = this.state;
+        const { refresh, File, musicToPlay, duration, position, indexFile, visiblePlaylist } = this.state;
 
         const title = (musicToPlay.length === 0)
             ? 'No Title'
@@ -340,10 +355,17 @@ export default class HomeView extends React.Component {
                     />
                 </SafeAreaView>
                 <View style={HomeStyle.ButtonPlaylistPosition}>
-                    <TouchableOpacity style={HomeStyle.ButtonStylePlaylist}>
+                    <TouchableOpacity
+                        style={HomeStyle.ButtonStylePlaylist}
+                        onPress={() => this.onShowModalAddPlaylist()}
+                    >
                         <MaterialCommunityIcons name="playlist-plus" size={42} color="#000" style={HomeStyle.IconStyle} />
                     </TouchableOpacity>
                 </View>
+                <Playlist
+                    visible={visiblePlaylist}
+                    onRequestClose={this.onCloseModalAddPlaylist}
+                />
             </SafeAreaView>
         )
     }

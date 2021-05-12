@@ -23,6 +23,7 @@ export default class ModalView extends React.Component {
     }
     state = {
         Folder: [],
+        Playlist: [],
     }
 
     _isMounted = false;
@@ -75,7 +76,7 @@ export default class ModalView extends React.Component {
         call();
 
     }
-    componentDidUpdate(prevProps, prevState, snapshot) {
+    componentDidUpdate(prevProps, prevState) {
         const call = async () => {
             await this.selectFolder();
         }
